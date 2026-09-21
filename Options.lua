@@ -69,7 +69,6 @@ local crestIcon = crest:CreateTexture(nil, "ARTWORK")
 crestIcon:SetPoint("TOPLEFT", 5, -5)
 crestIcon:SetPoint("BOTTOMRIGHT", -5, 5)
 crestIcon:SetTexture(W.ICON)
-crestIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 
 local title = panel:CreateFontString(nil, "OVERLAY")
 title:SetFontObject(W.FontTitle)

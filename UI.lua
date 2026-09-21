@@ -45,9 +45,8 @@ local icon = frame:CreateTexture(nil, "ARTWORK")
 icon:SetSize(22, 22)
 icon:SetPoint("TOPLEFT", 9, -8)
 icon:SetTexture(W.ICON)
-W.MakeRound(icon)
 
-local iconRing = frame:CreateTexture(nil, "OVERLAY")
+local iconRing = frame:CreateTexture(nil, "BACKGROUND", nil, 3)
 iconRing:SetSize(28, 28)
 iconRing:SetPoint("CENTER", icon)
 iconRing:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
@@ -269,6 +268,7 @@ local function FillMe(row)
     row.star:Hide()
     local _, class = UnitClass("player")
     local color = class and RAID_CLASS_COLORS[class]
+    row.name:SetWidth(NAME_WIDTH)
     row.name:SetText(L.ME)
     if color then row.name:SetTextColor(color.r, color.g, color.b) else row.name:SetTextColor(1, 1, 1) end
     row.barBg:Hide()
@@ -286,6 +286,7 @@ local function FillMember(row, entry)
 
     local _, class = GetPlayerInfoByGUID(entry.guid)
     local color = class and RAID_CLASS_COLORS[class]
+    row.name:SetWidth(NAME_WIDTH)
     row.name:SetText(Ambiguate(info.name or "?", "short"))
     local fade = volume > 0 and 1 or 0.55
     if color then
@@ -319,6 +320,8 @@ local function FillMessage(row, text)
     row.icon:SetAlpha(0)
     row.highlight:Hide()
     row.star:Hide()
+    -- A message uses the whole row, not just the name column
+    row.name:SetWidth(WIDTH - 40)
     row.name:SetText("|cff808080" .. text .. "|r")
     row.barBg:Hide()
     row.bar:Hide()

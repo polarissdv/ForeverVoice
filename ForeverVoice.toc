@@ -4,7 +4,7 @@
 ## Author: Polarz141
 ## Version: 1.0
 ## SavedVariables: ForeverVoiceDB
-## IconTexture: Interface\Icons\Ability_Warrior_BattleShout
+## IconTexture: Interface\AddOns\ForeverVoice\Media\icon
 ## AddonCompartmentFunc: ForeverVoice_OnAddonCompartmentClick
 
 Locales.lua

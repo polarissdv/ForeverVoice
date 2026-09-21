@@ -9,6 +9,7 @@
 - **Other categories:** Guild, Audio & Video
 - **Game version:** WoW Forever 1.60 (Interface 16001)
 - **Release type for 1.0:** Beta (the Forever client itself is a beta)
+- **Project avatar / logo:** `Media/logo.png` (512x512)
 - **Upload:** `ForeverVoice1.0.zip`
 - **Changelog for the file:** copy the 1.0 section below.
 

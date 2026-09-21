@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="Media/logo.png" width="220" alt="ForeverVoice logo">
+
 # ForeverVoice
 
 **Proximity voice chat for your guild in World of Warcraft: Forever.**

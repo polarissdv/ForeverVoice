@@ -7,7 +7,7 @@ local W = {}
 ns.W = W
 
 W.WHITE = "Interface\\Buttons\\WHITE8x8"
-W.ICON = "Interface\\Icons\\Ability_Warrior_BattleShout"
+W.ICON = "Interface\\AddOns\\ForeverVoice\\Media\\icon"
 W.GEAR = "Interface\\Icons\\INV_Misc_Gear_01"
 W.SPEAKER = "Interface\\Common\\VoiceChat-Speaker"
 W.WAVES = "Interface\\Common\\VoiceChat-On"
