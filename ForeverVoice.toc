@@ -1,0 +1,14 @@
+## Interface: 16001
+## Title: ForeverVoice
+## Notes: Proximity voice chat for your guild and group, using Blizzard's in-game voice chat
+## Author: Polarz141
+## Version: 0.1
+## SavedVariables: ForeverVoiceDB
+## AddonCompartmentFunc: ForeverVoice_OnAddonCompartmentClick
+
+Locales.lua
+Persist.lua
+Positions.lua
+Voice.lua
+ForeverVoice.lua
+UI.lua
