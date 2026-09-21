@@ -6,51 +6,94 @@ local L, Voice, Positions, Persist = ns.L, ns.Voice, ns.Positions, ns.Persist
 -- =========================================================
 -- Everyone stays in the same Blizzard voice channel (guild or group); each
 -- player's volume follows their distance: full voice up close, fading out,
--- silent beyond the maximum range or when their position is unknown.
-local TICK = 0.25        -- Seconds between two volume updates
-local SMOOTHING = 0.5    -- Part of the gap closed at each tick
-local MIN_CHANGE = 0.02  -- Smaller volume changes aren't sent to the game
+-- silent beyond the maximum range or when they are elsewhere.
+ns.VERSION = "0.2"
 
-local defaults = {
+local TICK = 0.25          -- Seconds between two volume updates
+local SMOOTHING = 0.5      -- Part of the gap closed at each tick
+local MIN_CHANGE = 0.02    -- Smaller volume changes aren't sent to the game
+local ALERT_COOLDOWN = 90  -- Seconds before the same player can trigger the alert again
+
+ns.defaults = {
     enabled = true,
     autoJoin = true,
-    fullRange = 8,     -- Yards: full voice up to here
-    maxRange = 40,     -- Yards: silent from here
-    unknownVolume = 0, -- Volume of players whose position is unknown
+    fullRange = 8,          -- Yards: full voice up to here
+    maxRange = 40,          -- Yards: silent from here
+    curve = "natural",      -- linear | natural | smooth
+    hearUnknown = false,    -- Players without the addon: heard (true) or muted
+    groupInstance = true,   -- Group at full volume in dungeons / battlegrounds
+    enterAlert = true,
+    showMinimap = true,
+    minimapAngle = 200,
     showFrame = true,
+    lockFrame = false,
+    compact = false,
+    showMe = true,
+    collapsed = false,
+    scale = 1,
+    alpha = 0.85,
+    language = nil,         -- nil: game language
     point = "CENTER", x = 300, y = 0,
+    always = {},            -- [full name] = true: always heard
 }
 
--- Filled at ADDON_LOADED
-ns.db = nil
+ns.db = nil -- Filled at ADDON_LOADED
 
--- [guid] = { name, distance, target, current, applied, speaking }
+-- [guid] = { name, distance, target, current, applied, speaking, inRange, always }
 local members = {}
 ns.members = members
 ns.channel = nil
+ns.meSpeaking = false
 
 local function Print(msg)
     DEFAULT_CHAT_FRAME:AddMessage("|cff33ccffForeverVoice|r: " .. msg)
 end
 ns.Print = Print
 
-local function CopyDefaults(src, dst)
+function ns.CopyDefaults(src, dst)
     for k, v in pairs(src) do
-        if dst[k] == nil then dst[k] = v end
+        if type(v) == "table" then
+            if type(dst[k]) ~= "table" then dst[k] = {} end
+            ns.CopyDefaults(v, dst[k])
+        elseif dst[k] == nil then
+            dst[k] = v
+        end
     end
     return dst
+end
+
+-- Everything that shows settings refreshes through here
+function ns.SettingsChanged()
+    if ns.ApplyFramePosition then ns.ApplyFramePosition() end
+    if ns.UpdateMinimapButton then ns.UpdateMinimapButton() end
+    if ns.RefreshUI then ns.RefreshUI() end
+    if ns.RefreshOptions then ns.RefreshOptions() end
 end
 
 -- ---------------------------------------------------------
 -- Volume curve
 -- ---------------------------------------------------------
-local function VolumeFor(distance)
+local CURVES = {
+    linear = function(t) return t end,
+    natural = function(t) return t * t end,        -- Drops fast, then lingers: like a real voice
+    smooth = function(t) return t * t * (3 - 2 * t) end,
+}
+
+-- Volume (0-1) at a distance, for the curve preview too
+function ns.VolumeAt(distance)
     local db = ns.db
-    if not distance then return db.unknownVolume end
     if distance <= db.fullRange then return 1 end
     if distance >= db.maxRange then return 0 end
     local t = (db.maxRange - distance) / (db.maxRange - db.fullRange)
-    return t * t -- Fades faster at the start, like a real voice
+    return (CURVES[db.curve] or CURVES.natural)(t)
+end
+
+local function TargetVolume(guid, info)
+    local db = ns.db
+    if info.always then return 1 end
+    if db.groupInstance and IsInInstance() and Positions.IsGroupMember(guid) then return 1 end
+    if info.distance == nil then return db.hearUnknown and 1 or 0 end
+    return ns.VolumeAt(info.distance)
 end
 
 local function Apply(guid, info, volume)
@@ -68,18 +111,46 @@ end
 ns.RestoreAll = RestoreAll
 
 -- ---------------------------------------------------------
+-- "X is in voice range" alert
+-- ---------------------------------------------------------
+local lastAlert = {}
+
+local function Alert(guid, info)
+    if not ns.db.enterAlert or not info.name then return end
+    local now = GetTime()
+    if lastAlert[guid] and now - lastAlert[guid] < ALERT_COOLDOWN then return end
+    lastAlert[guid] = now
+
+    local _, class = GetPlayerInfoByGUID(guid)
+    local color = class and RAID_CLASS_COLORS[class]
+    local name = Ambiguate(info.name, "short")
+    if color and color.WrapTextInColorCode then name = color:WrapTextInColorCode(name) end
+    UIErrorsFrame:AddMessage(string.format(L.IN_RANGE, name), 0.3, 0.85, 1)
+    if SOUNDKIT then PlaySound(SOUNDKIT.TELL_MESSAGE or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON) end
+end
+
+-- ---------------------------------------------------------
 -- Main loop
 -- ---------------------------------------------------------
 local function Update()
     local db = ns.db
-    if not db or not db.enabled then return end
-
-    Positions.Broadcast()
+    if not db then return end
 
     local channel = Voice.GetActiveChannel()
     ns.channel = channel
+    ns.talkKey, ns.openMic = Voice.TalkKey()
+    local list, meSpeaking = Voice.GetMembers(channel)
+    ns.meSpeaking = meSpeaking
+
+    if not db.enabled then
+        if ns.RefreshUI then ns.RefreshUI() end
+        return
+    end
+
+    Positions.Broadcast()
+
     local seen = {}
-    for _, member in ipairs(Voice.GetMembers(channel)) do
+    for _, member in ipairs(list) do
         local guid = member.guid
         seen[guid] = true
         local info = members[guid]
@@ -88,8 +159,13 @@ local function Update()
             members[guid] = info
         end
         info.distance, info.name = Positions.DistanceTo(guid)
+        info.always = info.name and db.always[info.name] or false
         info.speaking = member.isSpeaking
-        info.target = VolumeFor(info.distance)
+        info.target = TargetVolume(guid, info)
+
+        local inRange = info.distance ~= nil and info.distance < db.maxRange
+        if inRange and info.inRange == false then Alert(guid, info) end
+        info.inRange = inRange
 
         -- Smooth fade, then snap once close enough
         info.current = info.current + (info.target - info.current) * SMOOTHING
@@ -112,7 +188,7 @@ local function Update()
 end
 
 -- ---------------------------------------------------------
--- Public actions (slash commands, window)
+-- Public actions (slash commands, window, minimap, options)
 -- ---------------------------------------------------------
 function ns.SetEnabled(on)
     ns.db.enabled = on
@@ -123,7 +199,7 @@ function ns.SetEnabled(on)
         RestoreAll()
         Print(L.DISABLED)
     end
-    if ns.RefreshUI then ns.RefreshUI() end
+    ns.SettingsChanged()
 end
 
 function ns.Join()
@@ -131,9 +207,27 @@ function ns.Join()
     if label then Print(string.format(L.JOINING, label)) else Print(L.NO_CHANNEL) end
 end
 
+function ns.ToggleAlways(name)
+    if not name then return end
+    local on = not ns.db.always[name]
+    ns.db.always[name] = on or nil
+    Print(string.format(on and L.ALWAYS_ON or L.ALWAYS_OFF, Ambiguate(name, "short")))
+    Update()
+end
+
+function ns.ResetAll()
+    local db = ns.db
+    local keep = { language = db.language, minimapAngle = db.minimapAngle, always = db.always }
+    for k in pairs(db) do db[k] = nil end
+    ns.CopyDefaults(ns.defaults, db)
+    for k, v in pairs(keep) do db[k] = v end
+    ns.SettingsChanged()
+end
+
 local function Debug()
-    Print(string.format("voice API: %s  ·  connected: %s  ·  volume scale: %s",
-        Voice.Available() and "yes" or "NO", tostring(Voice.IsConnected()), tostring(Voice.GetScale() or "?")))
+    Print(string.format("v%s  ·  voice API: %s  ·  connected: %s  ·  volume scale: %s",
+        ns.VERSION, Voice.Available() and "yes" or "NO", tostring(Voice.IsConnected()),
+        tostring(Voice.GetScale() or "?")))
     local channel = Voice.GetActiveChannel()
     if channel then
         Print(string.format("channel: %s (id %s, type %s, %d member(s))", tostring(channel.name),
@@ -142,8 +236,9 @@ local function Debug()
         Print(L.NO_CHANNEL)
     end
     for _, info in pairs(members) do
-        Print(string.format("  %s: %s -> volume %d%%", info.name or "?",
-            info.distance and string.format("%.0f yd", info.distance) or "?", (info.applied or 1) * 100))
+        local distance = info.distance == nil and "?" or info.distance == math.huge and "elsewhere"
+            or string.format("%.0f yd", info.distance)
+        Print(string.format("  %s: %s -> volume %d%%", info.name or "?", distance, (info.applied or 1) * 100))
     end
     Positions.Debug(Print)
     Persist.Debug(Print)
@@ -152,9 +247,11 @@ end
 SLASH_FOREVERVOICE1 = "/fv"
 SLASH_FOREVERVOICE2 = "/forevervoice"
 SlashCmdList.FOREVERVOICE = function(msg)
-    local cmd, a, b = strsplit(" ", (msg or ""):lower():trim())
+    local cmd, a, b = strsplit(" ", strtrim((msg or ""):lower()))
     if cmd == "" then
         if ns.ToggleFrame then ns.ToggleFrame() end
+    elseif cmd == "options" or cmd == "config" or cmd == "opt" then
+        if ns.ToggleOptions then ns.ToggleOptions() end
     elseif cmd == "on" then
         ns.SetEnabled(true)
     elseif cmd == "off" then
@@ -162,10 +259,11 @@ SlashCmdList.FOREVERVOICE = function(msg)
     elseif cmd == "join" then
         ns.Join()
     elseif cmd == "range" and tonumber(a) then
-        local maxRange = math.max(5, math.min(200, tonumber(a)))
-        local fullRange = math.max(0, math.min(maxRange - 1, tonumber(b) or ns.db.fullRange))
+        local maxRange = math.max(10, math.min(100, tonumber(a)))
+        local fullRange = math.max(0, math.min(maxRange - 5, tonumber(b) or ns.db.fullRange))
         ns.db.maxRange, ns.db.fullRange = maxRange, fullRange
         Print(string.format(L.RANGE_SET, fullRange, maxRange))
+        ns.SettingsChanged()
     elseif cmd == "debug" then
         Debug()
     else
@@ -174,13 +272,19 @@ SlashCmdList.FOREVERVOICE = function(msg)
 end
 
 function ForeverVoice_OnAddonCompartmentClick()
-    if ns.ToggleFrame then ns.ToggleFrame() end
+    if ns.ToggleOptions then ns.ToggleOptions() end
 end
 
 -- ---------------------------------------------------------
 -- Settings copy for the Forever beta saving bug (see Persist.lua)
 -- ---------------------------------------------------------
-local MACRO_FIELDS = { "enabled", "autoJoin", "fullRange", "maxRange", "unknownVolume", "showFrame", "point", "x", "y", "_savedAt" }
+-- A macro holds 255 characters: the "always" list doesn't fit, only the
+-- CVar copy keeps it. _savedAt comes first so new fields can be appended.
+local MACRO_FIELDS = {
+    "_savedAt", "enabled", "autoJoin", "fullRange", "maxRange", "curve", "hearUnknown",
+    "groupInstance", "enterAlert", "showMinimap", "minimapAngle", "showFrame", "lockFrame",
+    "compact", "showMe", "collapsed", "scale", "alpha", "language", "point", "x", "y",
+}
 
 local function EncodeMacro(db)
     local parts = {}
@@ -195,14 +299,14 @@ end
 
 local function DecodeMacro(data)
     local values = { strsplit(",", data) }
-    if #values ~= #MACRO_FIELDS then return nil end
+    if not tonumber(values[1]) then return nil end
     local db = {}
     for i, key in ipairs(MACRO_FIELDS) do
         local v = values[i]
         if v == "t" then db[key] = true
         elseif v == "f" then db[key] = false
         elseif tonumber(v) then db[key] = tonumber(v)
-        elseif v ~= "" then db[key] = v end
+        elseif v and v ~= "" then db[key] = v end
     end
     return db
 end
@@ -216,13 +320,16 @@ frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_LOGOUT")
 frame:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
-        ForeverVoiceDB = CopyDefaults(defaults, ForeverVoiceDB or {})
+        ForeverVoiceDB = ns.CopyDefaults(ns.defaults, ForeverVoiceDB or {})
         ns.db = ForeverVoiceDB
         Persist.Register("ForeverVoiceDB", function() return ForeverVoiceDB end, function(saved)
-            Persist.Replace(ForeverVoiceDB, saved, defaults)
-            if ns.ApplyFramePosition then ns.ApplyFramePosition() end
+            -- The macro copy has no "always" list: keep the live one
+            if saved.always == nil then saved.always = ForeverVoiceDB.always end
+            Persist.Replace(ForeverVoiceDB, saved, ns.defaults)
+            ns.SettingsChanged()
         end, { name = "ForeverVoice", encode = EncodeMacro, decode = DecodeMacro })
     elseif event == "PLAYER_LOGIN" then
+        ns.SettingsChanged()
         if not Voice.Available() then
             Print(L.NO_VOICE)
             return

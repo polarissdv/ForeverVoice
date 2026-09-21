@@ -97,14 +97,18 @@ end
 -- ---------------------------------------------------------
 -- Members
 -- ---------------------------------------------------------
--- { guid, memberID, isSpeaking, isActive } for everyone but me
+-- { guid, memberID, isSpeaking, isActive } for everyone but me.
+-- Second return: true when I'm speaking.
 function Voice.GetMembers(channel)
     local list = {}
-    if not channel or not channel.members then return list end
+    if not channel or not channel.members then return list, false end
     local me = UnitGUID("player")
+    local meSpeaking = false
     for _, member in ipairs(channel.members) do
         local guid = Call("GetMemberGUID", member.memberID, channel.channelID)
-        if guid and guid ~= me then
+        if guid == me then
+            meSpeaking = member.isSpeaking
+        elseif guid then
             tinsert(list, {
                 guid = guid,
                 memberID = member.memberID,
@@ -113,7 +117,21 @@ function Voice.GetMembers(channel)
             })
         end
     end
-    return list
+    return list, meSpeaking
+end
+
+-- Push-to-talk key as shown to the player, or nil. Second return: open mic.
+function Voice.TalkKey()
+    local modes = Enum and Enum.CommunicationMode
+    local mode = Call("GetCommunicationMode")
+    if modes and mode == modes.OpenMic then return nil, true end
+    local keys = Call("GetPushToTalkBinding")
+    if type(keys) ~= "table" or #keys == 0 then return nil, false end
+    local names = {}
+    for i, key in ipairs(keys) do
+        names[i] = GetBindingText and GetBindingText(key) or key
+    end
+    return table.concat(names, "+"), false
 end
 
 local function Location(guid)

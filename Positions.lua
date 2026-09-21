@@ -104,28 +104,35 @@ local function UnitForGUID(guid)
     return nil
 end
 
--- Distance in yards to a player, or nil when unknown / not in the same zone.
+function Positions.IsGroupMember(guid)
+    if IsGUIDInGroup then return IsGUIDInGroup(guid) end
+    return UnitForGUID(guid) ~= nil
+end
+
+-- Distance in yards to a player:
+-- * a number when both positions are known and in the same zone
+-- * math.huge when they are elsewhere (other continent, dungeon, hidden)
+-- * nil when nothing is known (they don't have the addon)
 -- Second return: the player's full name (for display).
 function Positions.DistanceTo(guid)
     local myX, myY, myInstance = Positions.GetMine()
     local _, _, _, _, _, name, realm = GetPlayerInfoByGUID(guid)
     local fullName = FullName(name, realm)
-    if not myX then return nil, fullName end
 
     -- Group member: read directly, always fresh
     local unit = UnitForGUID(guid)
-    if unit then
+    if unit and myX then
         local y, x, _, instance = UnitPosition(unit)
         if y then
-            if instance ~= myInstance then return nil, fullName end
+            if instance ~= myInstance then return math.huge, fullName end
             return math.sqrt((x - myX) ^ 2 + (y - myY) ^ 2), fullName
         end
     end
 
     -- Otherwise: what they broadcast
     local pos = fullName and known[fullName]
-    if not pos or not pos.x or GetTime() - pos.time > STALE_AFTER then return nil, fullName end
-    if pos.instance ~= myInstance then return nil, fullName end
+    if not pos or GetTime() - pos.time > STALE_AFTER then return nil, fullName end
+    if not myX or not pos.x or pos.instance ~= myInstance then return math.huge, fullName end
     return math.sqrt((pos.x - myX) ^ 2 + (pos.y - myY) ^ 2), fullName
 end
 
