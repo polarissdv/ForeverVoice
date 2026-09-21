@@ -99,9 +99,17 @@ local options = W.IconButton(frame, 16, W.GEAR, "BTN_OPTIONS", function()
 end)
 options:SetPoint("RIGHT", collapse, "LEFT", -3, 0)
 
-local join = W.IconButton(frame, 16, W.SPEAKER, "BTN_JOIN", function() ns.Join() end)
+-- Join / leave voice: blue when out, red when in (click to leave)
+local join = W.IconButton(frame, 16, W.SPEAKER, "BTN_JOIN", function(self)
+    ns.ToggleJoin()
+    if GameTooltip:IsOwned(self) then self:GetScript("OnEnter")(self) end
+end)
 join:SetPoint("RIGHT", options, "LEFT", -3, 0)
 join.icon:SetTexCoord(0, 1, 0, 1)
+join.bg = join:CreateTexture(nil, "BACKGROUND")
+join.bg:SetPoint("TOPLEFT", 2, -2)
+join.bg:SetPoint("BOTTOMRIGHT", -2, 2)
+join.bg:SetTexture(W.WHITE)
 
 local toggle = CreateFrame("Button", nil, frame, "BackdropTemplate")
 toggle:SetSize(30, 16)
@@ -349,6 +357,14 @@ function ns.RefreshUI()
         dotR, dotG, dotB = 0.3, 1, 0.45
     end
     status:SetText(statusText)
+
+    if ns.channel then
+        join.tooltipKey = "BTN_LEAVE"
+        join.bg:SetVertexColor(0.6, 0.12, 0.12, 0.9)
+    else
+        join.tooltipKey = "BTN_JOIN"
+        join.bg:SetVertexColor(0.15, 0.4, 0.7, 0.9)
+    end
     statusDot:SetVertexColor(dotR, dotG, dotB)
 
     -- Rows

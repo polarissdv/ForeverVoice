@@ -5,12 +5,13 @@ local L, W = ns.L, ns.W
 -- MINIMAP BUTTON
 -- =========================================================
 -- Left-click: options  ·  Right-click: proximity on / off
--- Shift + click: show / hide the window  ·  Drag: move around the minimap
+-- Middle-click: join / leave voice  ·  Shift + click: show / hide the window
+-- Drag: move around the minimap
 local mm = CreateFrame("Button", "ForeverVoiceMinimapButton", Minimap)
 mm:SetSize(31, 31)
 mm:SetFrameStrata("MEDIUM")
 mm:SetFrameLevel(8)
-mm:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+mm:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 mm:RegisterForDrag("LeftButton")
 mm:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
 mm:Hide()
@@ -71,6 +72,8 @@ end)
 mm:SetScript("OnClick", function(self, button)
     if IsShiftKeyDown() then
         ns.ToggleFrame()
+    elseif button == "MiddleButton" then
+        ns.ToggleJoin()
     elseif button == "RightButton" then
         W.PlaySound(ns.db.enabled and "IG_MAINMENU_OPTION_CHECKBOX_OFF" or "IG_MAINMENU_OPTION_CHECKBOX_ON")
         ns.SetEnabled(not ns.db.enabled)
@@ -113,6 +116,7 @@ mm:SetScript("OnEnter", function(self)
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine(L.TT_LEFT, 0.7, 0.7, 0.7)
     GameTooltip:AddLine(L.TT_RIGHT, 0.7, 0.7, 0.7)
+    GameTooltip:AddLine(L.TT_MIDDLE, 0.7, 0.7, 0.7)
     GameTooltip:AddLine(L.TT_SHIFT, 0.7, 0.7, 0.7)
     GameTooltip:AddLine(L.TT_DRAG, 0.7, 0.7, 0.7)
     GameTooltip:Show()

@@ -94,6 +94,15 @@ function Voice.Join()
     return nil
 end
 
+-- Leaves the active channel. Returns its label, or nil when not in one.
+function Voice.Leave()
+    local channel = Voice.GetActiveChannel()
+    if not channel then return nil end
+    Call("DeactivateChannel", channel.channelID)
+    Call("LeaveChannel", channel.channelID)
+    return Voice.ChannelLabel(channel)
+end
+
 -- ---------------------------------------------------------
 -- Members
 -- ---------------------------------------------------------

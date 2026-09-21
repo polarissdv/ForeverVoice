@@ -7,7 +7,7 @@ local L, Voice, Positions, Persist = ns.L, ns.Voice, ns.Positions, ns.Persist
 -- Everyone stays in the same Blizzard voice channel (guild or group); each
 -- player's volume follows their distance: full voice up close, fading out,
 -- silent beyond the maximum range or when they are elsewhere.
-ns.VERSION = "0.2"
+ns.VERSION = "0.3"
 
 local TICK = 0.25          -- Seconds between two volume updates
 local SMOOTHING = 0.5      -- Part of the gap closed at each tick
@@ -207,6 +207,20 @@ function ns.Join()
     if label then Print(string.format(L.JOINING, label)) else Print(L.NO_CHANNEL) end
 end
 
+function ns.Leave()
+    -- Nobody stays quiet once we're out of the channel
+    RestoreAll()
+    local label = Voice.Leave()
+    if label then Print(string.format(L.LEFT, label)) else Print(L.NO_CHANNEL) end
+    ns.channel = nil
+    for guid in pairs(members) do members[guid] = nil end
+    if ns.RefreshUI then ns.RefreshUI() end
+end
+
+function ns.ToggleJoin()
+    if Voice.GetActiveChannel() then ns.Leave() else ns.Join() end
+end
+
 function ns.ToggleAlways(name)
     if not name then return end
     local on = not ns.db.always[name]
@@ -258,6 +272,8 @@ SlashCmdList.FOREVERVOICE = function(msg)
         ns.SetEnabled(false)
     elseif cmd == "join" then
         ns.Join()
+    elseif cmd == "leave" or cmd == "quit" then
+        ns.Leave()
     elseif cmd == "range" and tonumber(a) then
         local maxRange = math.max(10, math.min(100, tonumber(a)))
         local fullRange = math.max(0, math.min(maxRange - 5, tonumber(b) or ns.db.fullRange))

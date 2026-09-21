@@ -103,11 +103,12 @@ function W.IconButton(parent, size, texture, tooltipKey, onClick)
     b.icon:SetPoint("BOTTOMRIGHT", -2, 2)
     b.icon:SetTexture(texture)
     b.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    b.tooltipKey = tooltipKey -- Can be changed later
     b:SetScript("OnEnter", function(self)
         self:SetBackdropBorderColor(W.GOLD[1], W.GOLD[2], W.GOLD[3], 1)
-        if tooltipKey then
+        if self.tooltipKey then
             GameTooltip:SetOwner(self, "ANCHOR_TOP")
-            GameTooltip:SetText(ns.L[tooltipKey])
+            GameTooltip:SetText(ns.L[self.tooltipKey])
             GameTooltip:Show()
         end
     end)

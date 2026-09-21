@@ -10,6 +10,7 @@ local L = {
         DISABLED = "Proximité désactivée (volumes normaux rétablis)",
         NO_VOICE = "Chat vocal Blizzard indisponible sur ce client.",
         JOINING = "Connexion au salon vocal %s...",
+        LEFT = "Tu as quitté le salon vocal %s.",
         IN_RANGE = "%s est à portée de voix",
         ALWAYS_ON = "%s : toujours audible",
         ALWAYS_OFF = "%s : selon la distance",
@@ -19,6 +20,7 @@ local L = {
             "/fv options — ouvrir le menu",
             "/fv on | off — activer / couper la proximité",
             "/fv join — rejoindre le vocal (guilde, sinon groupe)",
+            "/fv leave — quitter le vocal",
             "/fv range <max> [plein] — portée en mètres (ex. /fv range 40 8)",
             "/fv debug — état du vocal et des positions",
         },
@@ -45,6 +47,7 @@ local L = {
         ROW_TT_RIGHT = "Clic droit : toujours entendre / selon la distance",
         ROW_TT_NO_ADDON = "N'a pas ForeverVoice : sa position est inconnue.",
         BTN_JOIN = "Rejoindre le vocal",
+        BTN_LEAVE = "Quitter le vocal",
         BTN_OPTIONS = "Options",
         BTN_COLLAPSE = "Réduire / agrandir",
 
@@ -94,6 +97,7 @@ local L = {
         TT_LEFT = "Clic gauche : options",
         TT_RIGHT = "Clic droit : activer / couper",
         TT_SHIFT = "Maj + clic : afficher / masquer la fenêtre",
+        TT_MIDDLE = "Clic molette : rejoindre / quitter le vocal",
         TT_DRAG = "Glisser : déplacer ce bouton",
     },
     en = {
@@ -101,6 +105,7 @@ local L = {
         DISABLED = "Proximity disabled (normal volumes restored)",
         NO_VOICE = "Blizzard voice chat is not available on this client.",
         JOINING = "Joining voice channel %s...",
+        LEFT = "You left the %s voice channel.",
         IN_RANGE = "%s is in voice range",
         ALWAYS_ON = "%s: always audible",
         ALWAYS_OFF = "%s: by distance",
@@ -110,6 +115,7 @@ local L = {
             "/fv options — open the menu",
             "/fv on | off — turn proximity on / off",
             "/fv join — join voice (guild, else group)",
+            "/fv leave — leave voice",
             "/fv range <max> [full] — range in yards (e.g. /fv range 40 8)",
             "/fv debug — voice and position status",
         },
@@ -135,6 +141,7 @@ local L = {
         ROW_TT_RIGHT = "Right-click: always hear / by distance",
         ROW_TT_NO_ADDON = "Doesn't have ForeverVoice: position unknown.",
         BTN_JOIN = "Join voice",
+        BTN_LEAVE = "Leave voice",
         BTN_OPTIONS = "Options",
         BTN_COLLAPSE = "Collapse / expand",
 
@@ -182,6 +189,7 @@ local L = {
         TT_LEFT = "Left-click: options",
         TT_RIGHT = "Right-click: turn on / off",
         TT_SHIFT = "Shift + click: show / hide the window",
+        TT_MIDDLE = "Middle-click: join / leave voice",
         TT_DRAG = "Drag: move this button",
     },
 }
