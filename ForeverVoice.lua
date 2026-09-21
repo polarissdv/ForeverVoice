@@ -7,7 +7,7 @@ local L, Voice, Positions, Persist = ns.L, ns.Voice, ns.Positions, ns.Persist
 -- Everyone stays in the same Blizzard voice channel (guild or group); each
 -- player's volume follows their distance: full voice up close, fading out,
 -- silent beyond the maximum range or when they are elsewhere.
-ns.VERSION = "0.3"
+ns.VERSION = "1.0"
 
 local TICK = 0.25          -- Seconds between two volume updates
 local SMOOTHING = 0.5      -- Part of the gap closed at each tick
