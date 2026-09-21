@@ -20,6 +20,14 @@ voice fades as they walk away, and they go silent once they are out of range.
 No external program, no Discord, no server to host. ForeverVoice uses the game's own voice
 chat and only changes how loud each player is. No libraries, no dependencies.
 
+<div align="center">
+
+<img src="Screenshots/2-window-in-voice.png" alt="The voice window in guild voice">
+&nbsp;
+<img src="Screenshots/3-options.png" width="300" alt="Options menu">
+
+</div>
+
 ## How it works
 
 1. ForeverVoice joins your **guild voice channel** (or your group's) when you log in.
