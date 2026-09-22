@@ -7,7 +7,7 @@ local L, Voice, Positions, Persist = ns.L, ns.Voice, ns.Positions, ns.Persist
 -- Everyone stays in the same Blizzard voice channel (guild or group); each
 -- player's volume follows their distance: full voice up close, fading out,
 -- silent beyond the maximum range or when they are elsewhere.
-ns.VERSION = "1.1"
+ns.VERSION = "1.2"
 
 local TICK = 0.25          -- Seconds between two volume updates
 local SMOOTHING = 0.5      -- Part of the gap closed at each tick
@@ -21,6 +21,7 @@ ns.defaults = {
     fullRange = 8,          -- Yards: full voice up to here
     maxRange = 40,          -- Yards: silent from here
     curve = "natural",      -- linear | natural | smooth
+    maxVolume = 0.5,        -- Volume up close, part of Blizzard's slider (1 = its top, too loud)
     hearUnknown = false,    -- Players without the addon: heard (true) or muted
     groupInstance = true,   -- Group at full volume in dungeons / battlegrounds
     enterAlert = true,
@@ -97,9 +98,17 @@ local function TargetVolume(guid, info)
     return ns.VolumeAt(info.distance)
 end
 
+-- volume: 0-1 of the "up close" volume chosen in the options
 local function Apply(guid, info, volume)
     info.applied = volume
-    Voice.SetMemberVolume(guid, volume)
+    Voice.SetMemberVolume(guid, volume * ns.db.maxVolume)
+end
+
+-- The "up close" volume changed: send every volume again
+function ns.ReapplyVolumes()
+    for guid, info in pairs(members) do
+        if info.applied then Apply(guid, info, info.applied) end
+    end
 end
 
 -- Everybody back to full volume (proximity off, logout)
@@ -286,9 +295,9 @@ function ns.ResetAll()
 end
 
 local function Debug()
-    Print(string.format("v%s  ·  voice API: %s  ·  connected: %s  ·  volume scale: %s",
+    Print(string.format("v%s  ·  voice API: %s  ·  connected: %s  ·  volume up close: %d%%",
         ns.VERSION, Voice.Available() and "yes" or "NO", tostring(Voice.IsConnected()),
-        tostring(Voice.GetScale() or "?")))
+        ns.db.maxVolume * 100))
     local channel = Voice.GetActiveChannel()
     if channel then
         Print(string.format("channel: %s (id %s, type %s, %d member(s))", tostring(channel.name),
@@ -297,10 +306,11 @@ local function Debug()
         Print(L.NO_CHANNEL)
     end
     Voice.DebugTypes(Print)
-    for _, info in pairs(members) do
+    for guid, info in pairs(members) do
         local distance = info.distance == nil and "?" or info.distance == math.huge and "elsewhere"
             or string.format("%.0f yd", info.distance)
-        Print(string.format("  %s: %s -> volume %d%%", info.name or "?", distance, (info.applied or 1) * 100))
+        Print(string.format("  %s: %s -> volume %d%% (game value: %s)", info.name or "?", distance,
+            (info.applied or 1) * 100, tostring(Voice.GetMemberVolume(guid))))
     end
     Positions.Debug(Print)
     Persist.Debug(Print)
@@ -350,7 +360,7 @@ local MACRO_FIELDS = {
     "_savedAt", "enabled", "autoJoin", "fullRange", "maxRange", "curve", "hearUnknown",
     "groupInstance", "enterAlert", "showMinimap", "minimapAngle", "showFrame", "lockFrame",
     "compact", "showMe", "collapsed", "scale", "alpha", "language", "point", "x", "y",
-    "channelMode",
+    "channelMode", "maxVolume",
 }
 
 local function EncodeMacro(db)

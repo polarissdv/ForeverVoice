@@ -205,24 +205,21 @@ local function Location(guid)
     return nil
 end
 
--- The member volume scale isn't documented the same way everywhere
--- (0-1 or 0-100): the first volume read tells which one this client uses.
-local volumeScale
-local function Scale(location)
-    if volumeScale then return volumeScale end
-    local current = Call("GetMemberVolume", location)
-    if type(current) == "number" then
-        volumeScale = current > 1.01 and 100 or 1
-    end
-    return volumeScale or 1
-end
-function Voice.GetScale() return volumeScale end
+-- Member volume goes from 0 to 100, like Blizzard's own slider in the
+-- player menu. 100 is the top of that slider, louder than normal.
+local VOLUME_SCALE = 100
 
--- volume: 0 to 1. Only the volume is changed, never the Blizzard mute:
--- the client may remember a mute, and nobody should stay muted if the
--- addon is removed.
+-- volume: 0 to 1, where 1 is the top of Blizzard's slider. Only the
+-- volume is changed, never the Blizzard mute: the client may remember a
+-- mute, and nobody should stay muted if the addon is removed.
 function Voice.SetMemberVolume(guid, volume)
     local location = Location(guid)
     if not location then return end
-    Call("SetMemberVolume", location, volume * Scale(location))
+    Call("SetMemberVolume", location, volume * VOLUME_SCALE)
+end
+
+-- Raw value from the game, for /fv debug
+function Voice.GetMemberVolume(guid)
+    local location = Location(guid)
+    return location and Call("GetMemberVolume", location)
 end

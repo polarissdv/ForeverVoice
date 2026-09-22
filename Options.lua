@@ -301,6 +301,16 @@ graph:SetBackdropColor(0, 0, 0, 0.7)
 graph:SetBackdropBorderColor(W.MUTED_BORDER[1], W.MUTED_BORDER[2], W.MUTED_BORDER[3], 1)
 cursorY = cursorY - 78
 
+-- How loud "full voice" is. The top of Blizzard's slider saturates.
+CreateSlider("MAX_VOLUME", 0, CONTENT_W, 10, 100, 5,
+    function() return math.floor(ns.db.maxVolume * 100 + 0.5) end,
+    function(v)
+        ns.db.maxVolume = v / 100
+        ns.ReapplyVolumes()
+    end,
+    function(v) return v .. " %" end)
+cursorY = cursorY - 48
+
 local GRAPH_INNER_W, GRAPH_INNER_H = CONTENT_W - 16, 42
 local graphBars = {}
 local barWidth = GRAPH_INNER_W / GRAPH_BARS

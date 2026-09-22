@@ -1,5 +1,14 @@
 # ForeverVoice - Changelog
 
+## 1.2
+- Fixed: players right next to you were too loud and saturated. Full voice
+  used the top of Blizzard's volume slider, which boosts the sound.
+- New "Volume up close" slider (default 50%) to set how loud full voice is.
+- Group voice: the join request now really asks to activate the channel,
+  with a second request when activating the existing channel isn't enough.
+- Blizzard voice errors are shown in the chat, with a message when a
+  channel can't be joined.
+
 ## 1.1
 - Choose your voice channel in the options: Auto (guild, else group),
   Guild or Group. Switching while in voice moves you to the new channel
