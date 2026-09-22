@@ -4,9 +4,9 @@
 
 # ForeverVoice
 
-**Proximity voice chat for your guild in World of Warcraft: Forever.**
+**Proximity voice chat for your guild or your party in World of Warcraft: Forever.**
 
-![Version](https://img.shields.io/badge/version-1.2-33ccff)
+![Version](https://img.shields.io/badge/version-1.3-33ccff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 
 </div>
@@ -53,10 +53,12 @@ chat and only changes how loud each player is. No libraries, no dependencies.
   - who is in the channel and who is talking;
   - how far each player is and how loud you hear them;
   - your own line with your push-to-talk key.
+- **Speaker above heads**: a green speaker icon above the players who are talking (needs
+  friendly nameplates, Shift + V by default).
 - **Minimap button** with a tooltip listing who is in range, and a halo while someone talks.
 - **Guild or group**: pick the voice channel in the options (Auto, Guild or Group). In Group mode,
   you join group voice as soon as a group forms.
-- **Join and leave voice** in one click.
+- **Join and leave voice** in one click: the join button asks "Guild or Group?".
 - **English and French**, switched in one click.
 - **Settings that stick**, even with the Forever beta bug that resets addon settings (see
   below).
@@ -92,7 +94,7 @@ chat and only changes how loud each player is. No libraries, no dependencies.
 | Section | What you can change |
 | --- | --- |
 | Range | Full voice distance (0-30 yd), silent distance (10-100 yd), fade curve with a live graph, volume up close |
-| Behavior | Voice channel (Auto, Guild, Group), proximity on / off, auto-join voice, group audible in dungeons, hear players without the addon, in-range alert, minimap button |
+| Behavior | Voice channel (Auto, Guild, Group), proximity on / off, auto-join voice, group audible in dungeons, hear players without the addon, in-range alert, icon above heads, minimap button |
 | Window | Show, lock, only players in range, your own line, size, background opacity |
 
 ## Installation

@@ -1,5 +1,13 @@
 # ForeverVoice - Changelog
 
+## 1.3
+- Speaker icon above the head of players who are talking, so you see who
+  speaks. Needs friendly nameplates (Shift + V by default). Can be turned
+  off in the options.
+- The join button (window, and middle-click on the minimap button) now asks
+  "Guild or Group?". Unavailable choices are greyed out with the reason,
+  and your choice is used for the automatic join too.
+
 ## 1.2
 - Fixed: players right next to you were too loud and saturated. Full voice
   used the top of Blizzard's volume slider, which boosts the sound.

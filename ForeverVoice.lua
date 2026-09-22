@@ -7,7 +7,7 @@ local L, Voice, Positions, Persist = ns.L, ns.Voice, ns.Positions, ns.Persist
 -- Everyone stays in the same Blizzard voice channel (guild or group); each
 -- player's volume follows their distance: full voice up close, fading out,
 -- silent beyond the maximum range or when they are elsewhere.
-ns.VERSION = "1.2"
+ns.VERSION = "1.3"
 
 local TICK = 0.25          -- Seconds between two volume updates
 local SMOOTHING = 0.5      -- Part of the gap closed at each tick
@@ -25,6 +25,7 @@ ns.defaults = {
     hearUnknown = false,    -- Players without the addon: heard (true) or muted
     groupInstance = true,   -- Group at full volume in dungeons / battlegrounds
     enterAlert = true,
+    speakerIcons = true,    -- Speaker above the head of players talking
     showMinimap = true,
     minimapAngle = 200,
     showFrame = true,
@@ -152,8 +153,16 @@ local function Update()
     local list, meSpeaking = Voice.GetMembers(channel)
     ns.meSpeaking = meSpeaking
 
+    -- Who is talking right now (icons above heads, even with proximity off)
+    local speaking = {}
+    for _, member in ipairs(list) do
+        if member.isSpeaking then speaking[member.guid] = true end
+    end
+    ns.speaking = speaking
+
     if not db.enabled then
         if ns.RefreshUI then ns.RefreshUI() end
+        if ns.UpdateSpeakerIcons then ns.UpdateSpeakerIcons() end
         return
     end
 
@@ -195,6 +204,7 @@ local function Update()
     end
 
     if ns.RefreshUI then ns.RefreshUI() end
+    if ns.UpdateSpeakerIcons then ns.UpdateSpeakerIcons() end
 end
 
 -- ---------------------------------------------------------
@@ -242,8 +252,15 @@ function ns.Leave()
     if ns.RefreshUI then ns.RefreshUI() end
 end
 
-function ns.ToggleJoin()
-    if Voice.GetActiveChannel() then ns.Leave() else ns.Join() end
+-- In voice: leave. Out of voice: ask guild or group (menu next to anchor).
+function ns.ToggleJoin(anchor)
+    if Voice.GetActiveChannel() then
+        ns.Leave()
+    elseif anchor and ns.ShowJoinMenu then
+        ns.ShowJoinMenu(anchor)
+    else
+        ns.Join()
+    end
 end
 
 -- Does the active channel match the chosen mode?
@@ -360,7 +377,7 @@ local MACRO_FIELDS = {
     "_savedAt", "enabled", "autoJoin", "fullRange", "maxRange", "curve", "hearUnknown",
     "groupInstance", "enterAlert", "showMinimap", "minimapAngle", "showFrame", "lockFrame",
     "compact", "showMe", "collapsed", "scale", "alpha", "language", "point", "x", "y",
-    "channelMode", "maxVolume",
+    "channelMode", "maxVolume", "speakerIcons",
 }
 
 local function EncodeMacro(db)

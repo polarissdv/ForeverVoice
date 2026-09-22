@@ -2,7 +2,7 @@
 ## Title: ForeverVoice
 ## Notes: Proximity voice chat for your guild and group, using Blizzard's in-game voice chat
 ## Author: Polarz141
-## Version: 1.2
+## Version: 1.3
 ## SavedVariables: ForeverVoiceDB
 ## IconTexture: Interface\AddOns\ForeverVoice\Media\icon
 ## AddonCompartmentFunc: ForeverVoice_OnAddonCompartmentClick
@@ -14,5 +14,7 @@ Positions.lua
 Voice.lua
 ForeverVoice.lua
 UI.lua
+JoinMenu.lua
+Nameplates.lua
 Options.lua
 Minimap.lua

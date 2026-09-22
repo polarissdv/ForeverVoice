@@ -73,7 +73,7 @@ mm:SetScript("OnClick", function(self, button)
     if IsShiftKeyDown() then
         ns.ToggleFrame()
     elseif button == "MiddleButton" then
-        ns.ToggleJoin()
+        ns.ToggleJoin(self)
     elseif button == "RightButton" then
         W.PlaySound(ns.db.enabled and "IG_MAINMENU_OPTION_CHECKBOX_OFF" or "IG_MAINMENU_OPTION_CHECKBOX_ON")
         ns.SetEnabled(not ns.db.enabled)

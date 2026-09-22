@@ -100,7 +100,7 @@ options:SetPoint("RIGHT", collapse, "LEFT", -3, 0)
 
 -- Join / leave voice: blue when out, red when in (click to leave)
 local join = W.IconButton(frame, 16, W.SPEAKER, "BTN_JOIN", function(self)
-    ns.ToggleJoin()
+    ns.ToggleJoin(self)
     if GameTooltip:IsOwned(self) then self:GetScript("OnEnter")(self) end
 end)
 join:SetPoint("RIGHT", options, "LEFT", -3, 0)

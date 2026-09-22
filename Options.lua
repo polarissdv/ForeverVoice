@@ -387,6 +387,7 @@ OptionCheck("AUTOJOIN", "AUTOJOIN_DESC", "autoJoin")
 OptionCheck("GROUP_INSTANCE", "GROUP_INSTANCE_DESC", "groupInstance")
 OptionCheck("HEAR_UNKNOWN", "HEAR_UNKNOWN_DESC", "hearUnknown")
 OptionCheck("ENTER_ALERT", "ENTER_ALERT_DESC", "enterAlert")
+OptionCheck("SPEAKER_ICONS", "SPEAKER_ICONS_DESC", "speakerIcons")
 OptionCheck("MINIMAP", "MINIMAP_DESC", "showMinimap")
 EndChecks()
 
