@@ -13,7 +13,7 @@ local pool = {}   -- Unused icons
 local shown = {}  -- [nameplate] = icon
 
 local function Acquire()
-    local icon = tremove(pool)
+    local icon = table.remove(pool)
     if icon then return icon end
 
     icon = CreateFrame("Frame", nil, UIParent)

@@ -65,7 +65,7 @@ end
 -- Closes by itself once the mouse has been away for a moment
 local away = 0
 menu:SetScript("OnUpdate", function(self, elapsed)
-    if MouseIsOver(self) or (self.anchor and MouseIsOver(self.anchor)) then
+    if self:IsMouseOver() or (self.anchor and self.anchor:IsMouseOver()) then
         away = 0
         return
     end
