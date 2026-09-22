@@ -213,6 +213,10 @@ function ns.Join(mode)
     local label, reason = Voice.Join(mode or ns.db.channelMode)
     if label then
         Print(string.format(L.JOINING, label))
+        -- Tell the player when the game didn't let us in
+        C_Timer.After(6, function()
+            if not Voice.GetActiveChannel() then Print(string.format(L.JOIN_FAILED, label)) end
+        end)
     else
         Print(L[reason or "NO_CHANNEL"])
     end
@@ -292,6 +296,7 @@ local function Debug()
     else
         Print(L.NO_CHANNEL)
     end
+    Voice.DebugTypes(Print)
     for _, info in pairs(members) do
         local distance = info.distance == nil and "?" or info.distance == math.huge and "elsewhere"
             or string.format("%.0f yd", info.distance)

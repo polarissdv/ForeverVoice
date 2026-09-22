@@ -36,17 +36,39 @@ function Voice.GetActiveChannel()
     return Call("GetChannel", id)
 end
 
+-- Channel type values. Blizzard renamed them between clients
+-- (Private_Party -> PrivateParty), so both names are read, with the
+-- numbers they have always had as a last resort.
 local function ChannelTypes()
-    return Enum and Enum.ChatChannelType or {}
+    local enum = Enum and Enum.ChatChannelType or {}
+    return {
+        communities = enum.Communities or 4,
+        privateParty = enum.PrivateParty or enum.Private_Party or 2,
+        publicParty = enum.PublicParty or enum.Public_Party or 3,
+    }
 end
 
 -- Short label for the window
 function Voice.ChannelLabel(channel)
     local L, types = ns.L, ChannelTypes()
-    if channel.channelType == types.Communities then return L.CHANNEL_GUILD end
-    if channel.channelType == types.Private_Party then return L.CHANNEL_PARTY end
-    if channel.channelType == types.Public_Party then return L.CHANNEL_INSTANCE end
+    if channel.channelType == types.communities then return L.CHANNEL_GUILD end
+    if channel.channelType == types.privateParty then return L.CHANNEL_PARTY end
+    if channel.channelType == types.publicParty then return L.CHANNEL_INSTANCE end
     return channel.name or L.CHANNEL_OTHER
+end
+
+-- For /fv debug: what this client calls each channel type
+function Voice.DebugTypes(print)
+    local parts = {}
+    for name, value in pairs(Enum and Enum.ChatChannelType or {}) do
+        tinsert(parts, name .. "=" .. tostring(value))
+    end
+    print("channel types: " .. (#parts > 0 and table.concat(parts, ", ") or "none"))
+    local types = ChannelTypes()
+    local party = Call("GetChannelForChannelType", types.privateParty)
+    local instance = Call("GetChannelForChannelType", types.publicParty)
+    print(string.format("group channel: %s  ·  instance channel: %s",
+        party and tostring(party.channelID) or "none", instance and tostring(instance.channelID) or "none"))
 end
 
 -- The guild's voice stream (club id, stream id), or nil
@@ -67,8 +89,8 @@ end
 function Voice.ChannelKind(channel)
     if not channel then return nil end
     local types = ChannelTypes()
-    if channel.channelType == types.Communities then return "guild" end
-    if channel.channelType == types.Private_Party or channel.channelType == types.Public_Party then
+    if channel.channelType == types.communities then return "guild" end
+    if channel.channelType == types.privateParty or channel.channelType == types.publicParty then
         return "group"
     end
     return nil
@@ -89,11 +111,11 @@ end
 local function JoinGroup()
     if not IsInGroup() then return false end
     local types = ChannelTypes()
-    local kind = IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and types.Public_Party or types.Private_Party
-    local channel = kind and Call("GetChannelForChannelType", kind)
+    local kind = IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and types.publicParty or types.privateParty
+    local channel = Call("GetChannelForChannelType", kind)
     if channel then
         Call("ActivateChannel", channel.channelID)
-    elseif kind then
+    else
         Call("RequestJoinChannelByChannelType", kind, nil, true)
     end
     return true
