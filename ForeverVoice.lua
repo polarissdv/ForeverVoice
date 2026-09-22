@@ -386,7 +386,22 @@ frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_LOGOUT")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
-frame:SetScript("OnEvent", function(self, event, arg1)
+frame:RegisterEvent("VOICE_CHAT_ERROR")
+frame:RegisterEvent("VOICE_CHAT_CHANNEL_JOINED")
+frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
+    if event == "VOICE_CHAT_ERROR" then
+        -- arg1: platform code, arg2: status code. Blizzard's own text when it has one.
+        local text = Voice_GetGameErrorStringFromStatusCode and Voice_GetGameErrorStringFromStatusCode(arg2)
+        Print(string.format(L.VOICE_ERROR, tostring(text or arg2), tostring(arg1)))
+        return
+    elseif event == "VOICE_CHAT_CHANNEL_JOINED" then
+        -- arg1: status (0 = success), arg2: channel id, arg3: channel type
+        local success = Enum and Enum.VoiceChatStatusCode and Enum.VoiceChatStatusCode.Success or 0
+        if arg1 ~= success then
+            Print(string.format(L.VOICE_JOIN_STATUS, tostring(arg3), tostring(arg1)))
+        end
+        return
+    end
     if event == "GROUP_ROSTER_UPDATE" then
         -- Group mode: the group channel appears when a group forms
         if ns.db and ns.db.channelMode ~= "guild" and IsInGroup() then C_Timer.After(2, AutoJoin) end

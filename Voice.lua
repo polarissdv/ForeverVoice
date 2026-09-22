@@ -114,9 +114,16 @@ local function JoinGroup()
     local kind = IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and types.publicParty or types.privateParty
     local channel = Call("GetChannelForChannelType", kind)
     if channel then
+        -- Same as Blizzard's headset button
         Call("ActivateChannel", channel.channelID)
+        -- Not active a moment later: ask the server to join and activate it
+        C_Timer.After(2, function()
+            if Call("GetActiveChannelID") ~= channel.channelID then
+                Call("RequestJoinChannelByChannelType", kind, true)
+            end
+        end)
     else
-        Call("RequestJoinChannelByChannelType", kind, nil, true)
+        Call("RequestJoinChannelByChannelType", kind, true)
     end
     return true
 end
