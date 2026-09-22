@@ -54,7 +54,7 @@ chat and only changes how loud each player is. No libraries, no dependencies.
   - how far each player is and how loud you hear them;
   - your own line with your push-to-talk key.
 - **Speaker above heads**: a green speaker icon above the players who are talking (needs
-  friendly nameplates, Shift + V by default).
+  friendly nameplates, Shift + V by default), and above your own character while you talk.
 - **Minimap button** with a tooltip listing who is in range, and a halo while someone talks.
 - **Guild or group**: pick the voice channel in the options (Auto, Guild or Group). In Group mode,
   you join group voice as soon as a group forms.

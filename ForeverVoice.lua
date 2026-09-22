@@ -26,6 +26,8 @@ ns.defaults = {
     groupInstance = true,   -- Group at full volume in dungeons / battlegrounds
     enterAlert = true,
     speakerIcons = true,    -- Speaker above the head of players talking
+    selfIcon = true,        -- Same icon for me, a bit above the screen center
+    selfIconX = 0, selfIconY = 110,
     showMinimap = true,
     minimapAngle = 200,
     showFrame = true,
@@ -71,6 +73,7 @@ function ns.SettingsChanged()
     if ns.UpdateMinimapButton then ns.UpdateMinimapButton() end
     if ns.RefreshUI then ns.RefreshUI() end
     if ns.RefreshOptions then ns.RefreshOptions() end
+    if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
 end
 
 -- ---------------------------------------------------------
@@ -163,6 +166,7 @@ local function Update()
     if not db.enabled then
         if ns.RefreshUI then ns.RefreshUI() end
         if ns.UpdateSpeakerIcons then ns.UpdateSpeakerIcons() end
+        if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
         return
     end
 
@@ -205,6 +209,7 @@ local function Update()
 
     if ns.RefreshUI then ns.RefreshUI() end
     if ns.UpdateSpeakerIcons then ns.UpdateSpeakerIcons() end
+    if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
 end
 
 -- ---------------------------------------------------------
@@ -377,7 +382,7 @@ local MACRO_FIELDS = {
     "_savedAt", "enabled", "autoJoin", "fullRange", "maxRange", "curve", "hearUnknown",
     "groupInstance", "enterAlert", "showMinimap", "minimapAngle", "showFrame", "lockFrame",
     "compact", "showMe", "collapsed", "scale", "alpha", "language", "point", "x", "y",
-    "channelMode", "maxVolume", "speakerIcons",
+    "channelMode", "maxVolume", "speakerIcons", "selfIcon", "selfIconX", "selfIconY",
 }
 
 local function EncodeMacro(db)

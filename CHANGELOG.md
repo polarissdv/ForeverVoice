@@ -7,6 +7,8 @@
 - The join button (window, and middle-click on the minimap button) now asks
   "Guild or Group?". Unavailable choices are greyed out with the reason,
   and your choice is used for the automatic join too.
+- The same icon shows above your own character while you talk. Open the
+  options menu to drag it right above your head. Can be turned off.
 
 ## 1.2
 - Fixed: players right next to you were too loud and saturated. Full voice

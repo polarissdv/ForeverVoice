@@ -388,6 +388,7 @@ OptionCheck("GROUP_INSTANCE", "GROUP_INSTANCE_DESC", "groupInstance")
 OptionCheck("HEAR_UNKNOWN", "HEAR_UNKNOWN_DESC", "hearUnknown")
 OptionCheck("ENTER_ALERT", "ENTER_ALERT_DESC", "enterAlert")
 OptionCheck("SPEAKER_ICONS", "SPEAKER_ICONS_DESC", "speakerIcons")
+OptionCheck("SELF_ICON", "SELF_ICON_DESC", "selfIcon")
 OptionCheck("MINIMAP", "MINIMAP_DESC", "showMinimap")
 EndChecks()
 
@@ -487,9 +488,16 @@ panel:SetScript("OnShow", function()
     W.PlaySound("IG_CHARACTER_INFO_OPEN")
     -- Texts may have been created before the saved language was loaded
     for _, fs in ipairs(localizedTexts) do fs:SetText(L[fs.l10nKey]) end
+    -- My icon stays visible while the menu is open, so it can be placed
+    ns.optionsOpen = true
+    ns.UpdateSelfIcon()
     ns.RefreshOptions()
 end)
-panel:SetScript("OnHide", function() W.PlaySound("IG_CHARACTER_INFO_CLOSE") end)
+panel:SetScript("OnHide", function()
+    W.PlaySound("IG_CHARACTER_INFO_CLOSE")
+    ns.optionsOpen = false
+    ns.UpdateSelfIcon()
+end)
 
 function ns.ToggleOptions()
     panel:SetShown(not panel:IsShown())

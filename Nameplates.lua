@@ -78,15 +78,66 @@ function ns.UpdateSpeakerIcons()
     end
 end
 
+-- ---------------------------------------------------------
+-- My own icon
+-- ---------------------------------------------------------
+-- The game gives addons no way to know where your head is on screen, and
+-- your character has no nameplate. The camera keeps your character in the
+-- middle of the screen, so the icon sits a bit above the center, and can
+-- be dragged (options menu open) to match your camera zoom.
+local selfIcon = Acquire()
+selfIcon:SetFrameStrata("MEDIUM")
+selfIcon:SetMovable(true)
+selfIcon:SetClampedToScreen(true)
+selfIcon:RegisterForDrag("LeftButton")
+selfIcon:SetScript("OnDragStart", function(self)
+    if ns.optionsOpen then self:StartMoving() end
+end)
+selfIcon:SetScript("OnDragStop", function(self)
+    self:StopMovingOrSizing()
+    local x, y = self:GetCenter()
+    local cx, cy = UIParent:GetCenter()
+    ns.db.selfIconX, ns.db.selfIconY = math.floor(x - cx + 0.5), math.floor(y - cy + 0.5)
+    ns.UpdateSelfIcon()
+end)
+selfIcon:SetScript("OnEnter", function(self)
+    if not ns.optionsOpen then return end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetText(ns.L.SELF_ICON)
+    GameTooltip:AddLine(ns.L.SELF_ICON_DRAG, 1, 1, 1, true)
+    GameTooltip:Show()
+end)
+selfIcon:SetScript("OnLeave", function() GameTooltip:Hide() end)
+selfIcon:Hide()
+
+-- Shown while I talk, and while the options menu is open (to place it)
+function ns.UpdateSelfIcon()
+    local db = ns.db
+    if not db or not db.selfIcon then
+        selfIcon:Hide()
+        return
+    end
+    selfIcon:ClearAllPoints()
+    selfIcon:SetPoint("CENTER", UIParent, "CENTER", db.selfIconX or 0, db.selfIconY or 110)
+    selfIcon:EnableMouse(ns.optionsOpen and true or false)
+    -- Above the options menu (it opens in the middle of the screen) while placing it
+    selfIcon:SetFrameStrata(ns.optionsOpen and "DIALOG" or "MEDIUM")
+    selfIcon:SetShown(ns.meSpeaking or ns.optionsOpen)
+end
+
 -- Soft pulse while shown
 local pulse = 0
 local driver = CreateFrame("Frame")
 driver:SetScript("OnUpdate", function(_, elapsed)
-    if not next(shown) then return end
+    if not next(shown) and not selfIcon:IsShown() then return end
     pulse = pulse + elapsed
     local wave = 0.5 + 0.5 * math.sin(pulse * 6)
     for _, icon in pairs(shown) do
         icon.glow:SetAlpha(0.25 + 0.45 * wave)
         icon.tex:SetAlpha(0.75 + 0.25 * wave)
+    end
+    if selfIcon:IsShown() then
+        selfIcon.glow:SetAlpha(0.25 + 0.45 * wave)
+        selfIcon.tex:SetAlpha(0.75 + 0.25 * wave)
     end
 end)
