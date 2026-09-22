@@ -231,15 +231,25 @@ end
 -- join again themselves
 local leftByHand = false
 
+-- The voice service can drop its login while the game still says we are
+-- logged in: the join then fails with "not logged in". We log in again and
+-- retry the join once.
+local lastJoinMode       -- Mode of the last join attempt
+local retryMode          -- Set while waiting for the new login
+local lastRetry = 0
+
 -- mode: "guild", "group" or "auto"; the chosen channel by default
 function ns.Join(mode)
     leftByHand = false
-    local label, reason = Voice.Join(mode or ns.db.channelMode)
+    lastJoinMode = mode or ns.db.channelMode
+    local label, reason = Voice.Join(lastJoinMode)
     if label then
         Print(string.format(L.JOINING, label))
-        -- Tell the player when the game didn't let us in
+        -- Tell the player when the game didn't let us in (not while a retry runs)
         C_Timer.After(6, function()
-            if not Voice.GetActiveChannel() then Print(string.format(L.JOIN_FAILED, label)) end
+            if not Voice.GetActiveChannel() and not retryMode and GetTime() - lastRetry > 6 then
+                Print(string.format(L.JOIN_FAILED, label))
+            end
         end)
     else
         Print(L[reason or "NO_CHANNEL"])
@@ -296,6 +306,7 @@ local function AutoJoin()
     local db = ns.db
     if not db.enabled or not db.autoJoin or leftByHand then return end
     if Voice.GetActiveChannel() then return end
+    lastJoinMode = db.channelMode -- A lost login is retried like a manual join
     Voice.Join(db.channelMode)
 end
 
@@ -420,11 +431,37 @@ frame:RegisterEvent("PLAYER_LOGOUT")
 frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:RegisterEvent("VOICE_CHAT_ERROR")
 frame:RegisterEvent("VOICE_CHAT_CHANNEL_JOINED")
+frame:RegisterEvent("VOICE_CHAT_LOGIN")
 frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
     if event == "VOICE_CHAT_ERROR" then
         -- arg1: platform code, arg2: status code. Blizzard's own text when it has one.
+        local codes = Enum and Enum.VoiceChatStatusCode or {}
+        -- Not logged in to the voice service: log in again, then retry the join (once)
+        if arg2 == (codes.ClientNotLoggedIn or 5) and lastJoinMode and GetTime() - lastRetry > 30 then
+            lastRetry = GetTime()
+            retryMode = lastJoinMode
+            Print(L.RECONNECTING)
+            local status = Voice.Call("Login")
+            if status == (codes.ClientAlreadyLoggedIn or 6) then
+                -- The game thinks it's still logged in: start over
+                Voice.Call("Logout")
+                C_Timer.After(1, function() Voice.Call("Login") end)
+            end
+            -- No login answer: give up quietly after a while
+            C_Timer.After(15, function() retryMode = nil end)
+            return
+        end
         local text = Voice_GetGameErrorStringFromStatusCode and Voice_GetGameErrorStringFromStatusCode(arg2)
         Print(string.format(L.VOICE_ERROR, tostring(text or arg2), tostring(arg1)))
+        return
+    elseif event == "VOICE_CHAT_LOGIN" then
+        -- arg1: status. Logged in again after a lost login: retry the join
+        local success = Enum and Enum.VoiceChatStatusCode and Enum.VoiceChatStatusCode.Success or 0
+        if retryMode and arg1 == success then
+            local mode = retryMode
+            retryMode = nil
+            C_Timer.After(1, function() ns.Join(mode) end)
+        end
         return
     elseif event == "VOICE_CHAT_CHANNEL_JOINED" then
         -- arg1: status (0 = success), arg2: channel id, arg3: channel type
