@@ -63,35 +63,56 @@ local function GuildStream()
     return nil
 end
 
--- Joins guild voice when possible, else the group's. Returns the label of
--- what it tried to join, or nil.
-function Voice.Join()
-    if not Voice.Available() then return nil end
-    if not Voice.IsConnected() and VC.Login then Call("Login") end
-
-    local clubId, streamId = GuildStream()
-    if clubId then
-        local channel = Call("GetChannelForCommunityStream", clubId, streamId)
-        if channel then
-            Call("ActivateChannel", channel.channelID)
-        else
-            Call("RequestJoinAndActivateCommunityStreamChannel", clubId, streamId)
-        end
-        return ns.L.CHANNEL_GUILD
-    end
-
-    if IsInGroup() then
-        local types = ChannelTypes()
-        local kind = IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and types.Public_Party or types.Private_Party
-        local channel = kind and Call("GetChannelForChannelType", kind)
-        if channel then
-            Call("ActivateChannel", channel.channelID)
-        elseif kind then
-            Call("RequestJoinChannelByChannelType", kind, nil, true)
-        end
-        return ns.L.CHANNEL_PARTY
+-- "guild", "group" or nil for the active channel
+function Voice.ChannelKind(channel)
+    if not channel then return nil end
+    local types = ChannelTypes()
+    if channel.channelType == types.Communities then return "guild" end
+    if channel.channelType == types.Private_Party or channel.channelType == types.Public_Party then
+        return "group"
     end
     return nil
+end
+
+local function JoinGuild()
+    local clubId, streamId = GuildStream()
+    if not clubId then return false end
+    local channel = Call("GetChannelForCommunityStream", clubId, streamId)
+    if channel then
+        Call("ActivateChannel", channel.channelID)
+    else
+        Call("RequestJoinAndActivateCommunityStreamChannel", clubId, streamId)
+    end
+    return true
+end
+
+local function JoinGroup()
+    if not IsInGroup() then return false end
+    local types = ChannelTypes()
+    local kind = IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and types.Public_Party or types.Private_Party
+    local channel = kind and Call("GetChannelForChannelType", kind)
+    if channel then
+        Call("ActivateChannel", channel.channelID)
+    elseif kind then
+        Call("RequestJoinChannelByChannelType", kind, nil, true)
+    end
+    return true
+end
+
+-- mode: "guild", "group" or "auto" (guild when possible, else the group).
+-- Returns the label of what it tried to join, or nil plus the reason
+-- ("NO_GUILD", "NO_GROUP").
+function Voice.Join(mode)
+    if not Voice.Available() then return nil, "NO_VOICE" end
+    if not Voice.IsConnected() and VC.Login then Call("Login") end
+    mode = mode or "auto"
+
+    if mode ~= "group" then
+        if JoinGuild() then return ns.L.CHANNEL_GUILD end
+        if mode == "guild" then return nil, "NO_GUILD" end
+    end
+    if JoinGroup() then return ns.L.CHANNEL_PARTY end
+    return nil, "NO_GROUP"
 end
 
 -- Leaves the active channel. Returns its label, or nil when not in one.

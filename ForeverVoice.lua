@@ -7,7 +7,7 @@ local L, Voice, Positions, Persist = ns.L, ns.Voice, ns.Positions, ns.Persist
 -- Everyone stays in the same Blizzard voice channel (guild or group); each
 -- player's volume follows their distance: full voice up close, fading out,
 -- silent beyond the maximum range or when they are elsewhere.
-ns.VERSION = "1.0"
+ns.VERSION = "1.1"
 
 local TICK = 0.25          -- Seconds between two volume updates
 local SMOOTHING = 0.5      -- Part of the gap closed at each tick
@@ -17,6 +17,7 @@ local ALERT_COOLDOWN = 90  -- Seconds before the same player can trigger the ale
 ns.defaults = {
     enabled = true,
     autoJoin = true,
+    channelMode = "auto",   -- auto (guild, else group) | guild | group
     fullRange = 8,          -- Yards: full voice up to here
     maxRange = 40,          -- Yards: silent from here
     curve = "natural",      -- linear | natural | smooth
@@ -202,12 +203,23 @@ function ns.SetEnabled(on)
     ns.SettingsChanged()
 end
 
-function ns.Join()
-    local label = Voice.Join()
-    if label then Print(string.format(L.JOINING, label)) else Print(L.NO_CHANNEL) end
+-- Set when the player leaves voice by hand: no automatic join until they
+-- join again themselves
+local leftByHand = false
+
+-- mode: "guild", "group" or "auto"; the chosen channel by default
+function ns.Join(mode)
+    leftByHand = false
+    local label, reason = Voice.Join(mode or ns.db.channelMode)
+    if label then
+        Print(string.format(L.JOINING, label))
+    else
+        Print(L[reason or "NO_CHANNEL"])
+    end
 end
 
 function ns.Leave()
+    leftByHand = true
     -- Nobody stays quiet once we're out of the channel
     RestoreAll()
     local label = Voice.Leave()
@@ -219,6 +231,37 @@ end
 
 function ns.ToggleJoin()
     if Voice.GetActiveChannel() then ns.Leave() else ns.Join() end
+end
+
+-- Does the active channel match the chosen mode?
+local function InWantedChannel()
+    local kind = Voice.ChannelKind(Voice.GetActiveChannel())
+    if not kind then return false end
+    local mode = ns.db.channelMode
+    return mode == "auto" or mode == kind
+end
+
+-- Picking another channel while in voice moves you there right away.
+-- join: also join when not in voice at all (/fv join).
+function ns.SetChannelMode(mode, join)
+    ns.db.channelMode = mode
+    ns.SettingsChanged()
+    if Voice.GetActiveChannel() then
+        if not InWantedChannel() then
+            ns.Leave()
+            C_Timer.After(1, function() ns.Join() end)
+        end
+    elseif join then
+        ns.Join()
+    end
+end
+
+-- Automatic join (login, new group) unless the player left by hand
+local function AutoJoin()
+    local db = ns.db
+    if not db.enabled or not db.autoJoin or leftByHand then return end
+    if Voice.GetActiveChannel() then return end
+    Voice.Join(db.channelMode)
 end
 
 function ns.ToggleAlways(name)
@@ -271,7 +314,9 @@ SlashCmdList.FOREVERVOICE = function(msg)
     elseif cmd == "off" then
         ns.SetEnabled(false)
     elseif cmd == "join" then
-        ns.Join()
+        -- Optional channel: /fv join guild | group (French words work too)
+        local modes = { guild = "guild", guilde = "guild", group = "group", groupe = "group", party = "group" }
+        ns.SetChannelMode(modes[a] or ns.db.channelMode, true)
     elseif cmd == "leave" or cmd == "quit" then
         ns.Leave()
     elseif cmd == "range" and tonumber(a) then
@@ -300,6 +345,7 @@ local MACRO_FIELDS = {
     "_savedAt", "enabled", "autoJoin", "fullRange", "maxRange", "curve", "hearUnknown",
     "groupInstance", "enterAlert", "showMinimap", "minimapAngle", "showFrame", "lockFrame",
     "compact", "showMe", "collapsed", "scale", "alpha", "language", "point", "x", "y",
+    "channelMode",
 }
 
 local function EncodeMacro(db)
@@ -334,7 +380,13 @@ local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("PLAYER_LOGOUT")
+frame:RegisterEvent("GROUP_ROSTER_UPDATE")
 frame:SetScript("OnEvent", function(self, event, arg1)
+    if event == "GROUP_ROSTER_UPDATE" then
+        -- Group mode: the group channel appears when a group forms
+        if ns.db and ns.db.channelMode ~= "guild" and IsInGroup() then C_Timer.After(2, AutoJoin) end
+        return
+    end
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         ForeverVoiceDB = ns.CopyDefaults(ns.defaults, ForeverVoiceDB or {})
         ns.db = ForeverVoiceDB
@@ -352,9 +404,7 @@ frame:SetScript("OnEvent", function(self, event, arg1)
         end
         C_Timer.NewTicker(TICK, Update)
         -- The voice service needs a few seconds after login
-        C_Timer.After(5, function()
-            if ns.db.enabled and ns.db.autoJoin and not Voice.GetActiveChannel() then Voice.Join() end
-        end)
+        C_Timer.After(5, AutoJoin)
     elseif event == "PLAYER_LOGOUT" then
         -- The client may keep member volumes: leave everyone at full volume
         RestoreAll()

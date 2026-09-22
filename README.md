@@ -6,7 +6,7 @@
 
 **Proximity voice chat for your guild in World of Warcraft: Forever.**
 
-![Version](https://img.shields.io/badge/version-1.0-33ccff)
+![Version](https://img.shields.io/badge/version-1.1-33ccff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 
 </div>
@@ -30,7 +30,8 @@ chat and only changes how loud each player is. No libraries, no dependencies.
 
 ## How it works
 
-1. ForeverVoice joins your **guild voice channel** (or your group's) when you log in.
+1. ForeverVoice joins the voice channel you picked when you log in: your **guild**, your
+   **group**, or **Auto** (the guild, else the group).
 2. Every player who has the addon shares their position with the guild, using a small hidden
    addon message.
 3. Your addon sets the volume of **each player** based on how far they are: full voice up
@@ -53,6 +54,8 @@ chat and only changes how loud each player is. No libraries, no dependencies.
   - how far each player is and how loud you hear them;
   - your own line with your push-to-talk key.
 - **Minimap button** with a tooltip listing who is in range, and a halo while someone talks.
+- **Guild or group**: pick the voice channel in the options (Auto, Guild or Group). In Group mode,
+  you join group voice as soon as a group forms.
 - **Join and leave voice** in one click.
 - **English and French**, switched in one click.
 - **Settings that stick**, even with the Forever beta bug that resets addon settings (see
@@ -80,6 +83,7 @@ chat and only changes how loud each player is. No libraries, no dependencies.
 | `/fv options` | Open the options menu |
 | `/fv on` / `/fv off` | Turn proximity on / off |
 | `/fv join` / `/fv leave` | Join / leave voice |
+| `/fv join guild` / `/fv join group` | Switch to guild or group voice |
 | `/fv range 40 8` | Silent from 40 yards, full voice up to 8 yards |
 | `/fv debug` | Voice, positions and settings backup status |
 
@@ -88,7 +92,7 @@ chat and only changes how loud each player is. No libraries, no dependencies.
 | Section | What you can change |
 | --- | --- |
 | Range | Full voice distance (0-30 yd), silent distance (10-100 yd), fade curve with a live graph |
-| Behavior | Proximity on / off, auto-join voice, group audible in dungeons, hear players without the addon, in-range alert, minimap button |
+| Behavior | Voice channel (Auto, Guild, Group), proximity on / off, auto-join voice, group audible in dungeons, hear players without the addon, in-range alert, minimap button |
 | Window | Show, lock, only players in range, your own line, size, background opacity |
 
 ## Installation

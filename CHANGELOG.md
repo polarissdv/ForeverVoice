@@ -1,5 +1,14 @@
 # ForeverVoice - Changelog
 
+## 1.1
+- Choose your voice channel in the options: Auto (guild, else group),
+  Guild or Group. Switching while in voice moves you to the new channel
+  right away.
+- In Group mode, you join group voice as soon as a group forms.
+- /fv join guild and /fv join group switch channel from the chat.
+- Leaving voice by hand is respected: you are not joined back
+  automatically until you join again yourself.
+
 ## 1.0
 First public release.
 - Proximity voice on top of Blizzard's voice chat. Each player's volume

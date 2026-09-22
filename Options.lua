@@ -337,6 +337,39 @@ tinsert(refreshers, function()
 end)
 
 Section("SECTION_BEHAVIOR")
+
+-- Voice channel: Auto | Guild | Group
+local modeLabel = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+modeLabel:SetPoint("TOPLEFT", PAD, cursorY - 4)
+Localize(modeLabel, "CHANNEL_MODE")
+
+local MODES = {
+    { id = "auto", key = "MODE_AUTO" },
+    { id = "guild", key = "MODE_GUILD" },
+    { id = "group", key = "MODE_GROUP" },
+}
+local modeButtons = {}
+for i, mode in ipairs(MODES) do
+    local b = CreateButton(panel, mode.key, CURVE_BTN_W, 22, function()
+        ns.SetChannelMode(mode.id)
+    end)
+    b:SetPoint("TOPLEFT", PAD + 70 + (i - 1) * (CURVE_BTN_W + 4), cursorY)
+    b:HookScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+        GameTooltip:SetText(L.CHANNEL_MODE)
+        GameTooltip:AddLine(L.CHANNEL_MODE_DESC, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+    b:HookScript("OnLeave", function() GameTooltip:Hide() end)
+    b.mode = mode.id
+    modeButtons[i] = b
+end
+tinsert(refreshers, function()
+    for _, b in ipairs(modeButtons) do
+        if b.mode == ns.db.channelMode then b:LockHighlight() else b:UnlockHighlight() end
+    end
+end)
+cursorY = cursorY - 32
 CreateCheck("ENABLED_CHECK", "ENABLED_CHECK_DESC",
     function() return ns.db.enabled end,
     function(v) ns.SetEnabled(v) end)
