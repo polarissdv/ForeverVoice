@@ -7,7 +7,7 @@ local L, Voice, Positions, Persist = ns.L, ns.Voice, ns.Positions, ns.Persist
 -- Everyone stays in the same Blizzard voice channel (guild or group); each
 -- player's volume follows their distance: full voice up close, fading out,
 -- silent beyond the maximum range or when they are elsewhere.
-ns.VERSION = "1.3"
+ns.VERSION = "1.4"
 
 local TICK = 0.25          -- Seconds between two volume updates
 local SMOOTHING = 0.5      -- Part of the gap closed at each tick
@@ -26,6 +26,11 @@ ns.defaults = {
     groupInstance = true,   -- Group at full volume in dungeons / battlegrounds
     enterAlert = true,
     speakerIcons = true,    -- Speaker above the head of players talking
+    banner = true,          -- Floating list of who is talking (works in dungeons)
+    bannerX = 0, bannerY = 240,
+    ghostMode = false,      -- Ghosts only hear ghosts
+    joinSound = true,       -- Sound when someone joins or leaves the channel
+    aloneAlert = true,      -- Warning when I talk with nobody in range
     selfIcon = true,        -- Same icon for me, a bit above the screen center
     selfIconX = 0, selfIconY = 110,
     showMinimap = true,
@@ -74,6 +79,7 @@ function ns.SettingsChanged()
     if ns.RefreshUI then ns.RefreshUI() end
     if ns.RefreshOptions then ns.RefreshOptions() end
     if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
+    if ns.UpdateBanner then ns.UpdateBanner() end
 end
 
 -- ---------------------------------------------------------
@@ -94,9 +100,14 @@ function ns.VolumeAt(distance)
     return (CURVES[db.curve] or CURVES.natural)(t)
 end
 
-local function TargetVolume(guid, info)
+local function TargetVolume(guid, info, myDead)
     local db = ns.db
     if info.always then return 1 end
+    -- Ghosts only hear ghosts, and the living only the living
+    if db.ghostMode then
+        local theirDead = Positions.IsDead(guid, info.name)
+        if theirDead ~= nil and theirDead ~= myDead then return 0 end
+    end
     if db.groupInstance and IsInInstance() and Positions.IsGroupMember(guid) then return 1 end
     if info.distance == nil then return db.hearUnknown and 1 or 0 end
     return ns.VolumeAt(info.distance)
@@ -144,6 +155,44 @@ local function Alert(guid, info)
 end
 
 -- ---------------------------------------------------------
+-- Someone joins or leaves the voice channel
+-- ---------------------------------------------------------
+local QUIET_AFTER_JOIN = 6 -- Seconds without sounds when we enter a channel
+local channelSince = 0
+local inChannel = {}       -- [guid] = true, everyone in the channel
+
+local function ChannelSound(joined)
+    if not ns.db.joinSound or GetTime() - channelSince < QUIET_AFTER_JOIN then return end
+    if not SOUNDKIT then return end
+    PlaySound(joined and (SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.TELL_MESSAGE)
+        or (SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF or SOUNDKIT.TELL_MESSAGE))
+end
+
+-- ---------------------------------------------------------
+-- "Nobody can hear you" warning
+-- ---------------------------------------------------------
+local ALONE_COOLDOWN = 60
+local ALONE_AFTER = 2 -- Seconds of talking before the warning
+local speakingSince, lastAloneWarning = nil, 0
+
+local function CheckAlone(anyoneAudible)
+    if not ns.db.aloneAlert or not ns.meSpeaking then
+        speakingSince = nil
+        return
+    end
+    if anyoneAudible then
+        speakingSince = nil
+        return
+    end
+    local now = GetTime()
+    speakingSince = speakingSince or now
+    if now - speakingSince >= ALONE_AFTER and now - lastAloneWarning > ALONE_COOLDOWN then
+        lastAloneWarning = now
+        UIErrorsFrame:AddMessage(L.NOBODY_HEARS, 1, 0.7, 0.2)
+    end
+end
+
+-- ---------------------------------------------------------
 -- Main loop
 -- ---------------------------------------------------------
 local function Update()
@@ -163,15 +212,34 @@ local function Update()
     end
     ns.speaking = speaking
 
+    -- Arrivals and departures in the channel (a sound for each)
+    if not channel then
+        channelSince, inChannel = 0, {}
+    else
+        if channelSince == 0 then channelSince = GetTime() end
+        local present = {}
+        for _, member in ipairs(list) do
+            present[member.guid] = true
+            if not inChannel[member.guid] then ChannelSound(true) end
+        end
+        for guid in pairs(inChannel) do
+            if not present[guid] then ChannelSound(false) end
+        end
+        inChannel = present
+    end
+
     if not db.enabled then
         if ns.RefreshUI then ns.RefreshUI() end
         if ns.UpdateSpeakerIcons then ns.UpdateSpeakerIcons() end
         if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
+        if ns.UpdateBanner then ns.UpdateBanner() end
         return
     end
 
     Positions.Broadcast()
 
+    local myDead = UnitIsDeadOrGhost("player") and true or false
+    local anyoneAudible = false
     local seen = {}
     for _, member in ipairs(list) do
         local guid = member.guid
@@ -184,7 +252,7 @@ local function Update()
         info.distance, info.name = Positions.DistanceTo(guid)
         info.always = info.name and db.always[info.name] or false
         info.speaking = member.isSpeaking
-        info.target = TargetVolume(guid, info)
+        info.target = TargetVolume(guid, info, myDead)
 
         local inRange = info.distance ~= nil and info.distance < db.maxRange
         if inRange and info.inRange == false then Alert(guid, info) end
@@ -198,6 +266,7 @@ local function Update()
             or (info.current ~= info.applied and (info.current == 0 or info.current == 1)) then
             Apply(guid, info, info.current)
         end
+        if (info.applied or 0) > 0 then anyoneAudible = true end
     end
     for guid, info in pairs(members) do
         if not seen[guid] then
@@ -207,9 +276,12 @@ local function Update()
         end
     end
 
+    CheckAlone(anyoneAudible)
+
     if ns.RefreshUI then ns.RefreshUI() end
     if ns.UpdateSpeakerIcons then ns.UpdateSpeakerIcons() end
     if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
+    if ns.UpdateBanner then ns.UpdateBanner() end
 end
 
 -- ---------------------------------------------------------
@@ -373,6 +445,8 @@ SlashCmdList.FOREVERVOICE = function(msg)
         ns.db.maxRange, ns.db.fullRange = maxRange, fullRange
         Print(string.format(L.RANGE_SET, fullRange, maxRange))
         ns.SettingsChanged()
+    elseif cmd == "who" then
+        ns.WhoHasAddon()
     elseif cmd == "debug" then
         Debug()
     else
@@ -394,6 +468,7 @@ local MACRO_FIELDS = {
     "groupInstance", "enterAlert", "showMinimap", "minimapAngle", "showFrame", "lockFrame",
     "compact", "showMe", "collapsed", "scale", "alpha", "language", "point", "x", "y",
     "channelMode", "maxVolume", "speakerIcons", "selfIcon", "selfIconX", "selfIconY",
+    "banner", "bannerX", "bannerY", "ghostMode", "joinSound", "aloneAlert",
 }
 
 local function EncodeMacro(db)

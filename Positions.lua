@@ -44,7 +44,8 @@ function Positions.GetMine()
     return x, y, instance
 end
 
-local function Send(message)
+-- Shared with the version roster (/fv who)
+function Positions.Send(message)
     if not (C_ChatInfo and C_ChatInfo.SendAddonMessage) then return end
     if IsInGuild() then
         C_ChatInfo.SendAddonMessage(PREFIX, message, "GUILD")
@@ -67,10 +68,12 @@ function Positions.Broadcast(force)
     local wait = moved and SEND_MOVED or SEND_IDLE
     if not force and now - lastSent.time < wait then return end
 
+    -- ":d" marks a dead player (ghosts only hear ghosts, when the option is on)
+    local dead = UnitIsDeadOrGhost("player") and ":d" or ""
     if x then
-        Send(string.format("P:%d:%d:%d", instance, math.floor(x + 0.5), math.floor(y + 0.5)))
+        Positions.Send(string.format("P:%d:%d:%d%s", instance, math.floor(x + 0.5), math.floor(y + 0.5), dead))
     else
-        Send("P:-") -- Position hidden (dungeon...): the others mute us
+        Positions.Send("P:-" .. dead) -- Position hidden (dungeon...): the others mute us
     end
     lastSent.x, lastSent.y, lastSent.instance, lastSent.time = x, y, instance, now
 end
@@ -82,14 +85,30 @@ local function OnMessage(message, sender)
     local name = FullName(sender)
     if not name or name == FullName(UnitName("player")) then return end
 
-    if message == "P:-" then
-        known[name] = { time = GetTime() }
+    local body, dead = message:match("^(.-)(:d)$")
+    body = body or message
+    dead = dead ~= nil
+
+    if body == "P:-" then
+        known[name] = { time = GetTime(), dead = dead }
         return
     end
-    local instance, x, y = message:match("^P:(%-?%d+):(%-?%d+):(%-?%d+)$")
+    local instance, x, y = body:match("^P:(%-?%d+):(%-?%d+):(%-?%d+)$")
     if instance then
-        known[name] = { x = tonumber(x), y = tonumber(y), instance = tonumber(instance), time = GetTime() }
+        known[name] = {
+            x = tonumber(x), y = tonumber(y), instance = tonumber(instance),
+            time = GetTime(), dead = dead,
+        }
     end
+end
+
+-- Is this player a ghost? nil when unknown (no addon)
+function Positions.IsDead(guid, fullName)
+    local unit = ns.UnitForGUID and ns.UnitForGUID(guid)
+    if unit then return UnitIsDeadOrGhost(unit) and true or false end
+    local pos = fullName and known[fullName]
+    if not pos or GetTime() - pos.time > STALE_AFTER then return nil end
+    return pos.dead and true or false
 end
 
 -- Group member unit token for a GUID, if any
@@ -103,6 +122,8 @@ local function UnitForGUID(guid)
     end
     return nil
 end
+
+ns.UnitForGUID = UnitForGUID
 
 function Positions.IsGroupMember(guid)
     if IsGUIDInGroup then return IsGUIDInGroup(guid) end
@@ -163,7 +184,14 @@ frame:SetScript("OnEvent", function(_, event, prefix, message, _, sender)
             C_ChatInfo.RegisterAddonMessagePrefix(PREFIX)
         end
     elseif event == "CHAT_MSG_ADDON" then
-        if prefix == PREFIX and ns.db and ns.db.enabled then OnMessage(message, sender) end
+        if prefix ~= PREFIX or not ns.db then return end
+        -- Anything that isn't a position (versions...) is handled elsewhere,
+        -- even with proximity off
+        if message:sub(1, 2) ~= "P:" then
+            if ns.OnRosterMessage then ns.OnRosterMessage(message, sender) end
+        elseif ns.db.enabled then
+            OnMessage(message, sender)
+        end
     else
         -- New zone or new group: tell everyone right away
         C_Timer.After(1, function()

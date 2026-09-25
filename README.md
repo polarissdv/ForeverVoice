@@ -6,7 +6,7 @@
 
 **Proximity voice chat for your guild or your party in World of Warcraft: Forever.**
 
-![Version](https://img.shields.io/badge/version-1.3-33ccff)
+![Version](https://img.shields.io/badge/version-1.4-33ccff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
 
 </div>
@@ -53,6 +53,7 @@ chat and only changes how loud each player is. No libraries, no dependencies.
   - who is in the channel and who is talking;
   - how far each player is and how loud you hear them;
   - your own line with your push-to-talk key.
+- **Talking banner**: a floating list of who is talking, working even in dungeons.
 - **Speaker above heads**: a green speaker icon above the players who are talking (needs
   friendly nameplates, Shift + V by default), and above your own character while you talk.
 - **Minimap button** with a tooltip listing who is in range, and a halo while someone talks.
@@ -87,6 +88,7 @@ chat and only changes how loud each player is. No libraries, no dependencies.
 | `/fv join` / `/fv leave` | Join / leave voice |
 | `/fv join guild` / `/fv join group` | Switch to guild or group voice |
 | `/fv range 40 8` | Silent from 40 yards, full voice up to 8 yards |
+| `/fv who` | Who in the guild has the addon, and their version |
 | `/fv debug` | Voice, positions and settings backup status |
 
 ## Options
