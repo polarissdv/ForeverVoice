@@ -26,7 +26,7 @@ ns.defaults = {
     groupInstance = true,   -- Group at full volume in dungeons / battlegrounds
     enterAlert = true,
     speakerIcons = true,    -- Speaker above the head of players talking
-    banner = true,          -- Floating list of who is talking (works in dungeons)
+    banner = false,         -- Floating list of who is talking (works in dungeons)
     bannerX = 0, bannerY = 240,
     ghostMode = false,      -- Ghosts only hear ghosts
     joinSound = true,       -- Sound when someone joins or leaves the channel

@@ -21,8 +21,9 @@ banner:SetBackdropColor(0, 0, 0, 0.6)
 banner:SetBackdropBorderColor(W.SPEAKING[1], W.SPEAKING[2], W.SPEAKING[3], 0.5)
 banner:Hide()
 
+-- Moved with Shift + drag at any time, or freely while the options are open
 banner:SetScript("OnDragStart", function(self)
-    if ns.optionsOpen then self:StartMoving() end
+    if ns.optionsOpen or IsShiftKeyDown() then self:StartMoving() end
 end)
 banner:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
@@ -31,11 +32,19 @@ banner:SetScript("OnDragStop", function(self)
     ns.db.bannerX, ns.db.bannerY = math.floor(x - cx + 0.5), math.floor(y - cy + 0.5)
     ns.UpdateBanner()
 end)
+-- Right-click: hide it for good (the option brings it back)
+banner:SetScript("OnMouseUp", function(self, button)
+    if button ~= "RightButton" then return end
+    ns.db.banner = false
+    ns.Print(L.BANNER_HIDDEN)
+    ns.UpdateBanner()
+    if ns.RefreshOptions then ns.RefreshOptions() end
+end)
 banner:SetScript("OnEnter", function(self)
-    if not ns.optionsOpen then return end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetText(L.BANNER)
     GameTooltip:AddLine(L.BANNER_DRAG, 1, 1, 1, true)
+    GameTooltip:AddLine(L.BANNER_HIDDEN, 0.7, 0.7, 0.7, true)
     GameTooltip:Show()
 end)
 banner:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -63,13 +72,10 @@ local function GetRow(i)
     return row
 end
 
--- Everyone talking that I can actually hear, me included
+-- Everyone talking that I can actually hear. Not me: with an open mic I
+-- would be "talking" all the time, and my own icon already says it.
 local function Speakers()
     local list = {}
-    if ns.meSpeaking then
-        local _, class = UnitClass("player")
-        tinsert(list, { name = L.ME, class = class })
-    end
     for guid in pairs(ns.speaking or {}) do
         local info = ns.members[guid]
         local audible = not ns.db.enabled or not info or (info.applied or 1) > 0
@@ -90,7 +96,7 @@ function ns.UpdateBanner()
     end
     banner:ClearAllPoints()
     banner:SetPoint("CENTER", UIParent, "CENTER", db.bannerX or 0, db.bannerY or 240)
-    banner:EnableMouse(ns.optionsOpen and true or false)
+    banner:EnableMouse(true)
     banner:SetFrameStrata(ns.optionsOpen and "DIALOG" or "MEDIUM")
 
     local list = Speakers()
