@@ -14,7 +14,6 @@ Positions.lua
 Voice.lua
 ForeverVoice.lua
 UI.lua
-Banner.lua
 Who.lua
 JoinMenu.lua
 Nameplates.lua

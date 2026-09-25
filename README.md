@@ -53,7 +53,6 @@ chat and only changes how loud each player is. No libraries, no dependencies.
   - who is in the channel and who is talking;
   - how far each player is and how loud you hear them;
   - your own line with your push-to-talk key.
-- **Talking banner**: a floating list of who is talking, working even in dungeons.
 - **Speaker above heads**: a green speaker icon above the players who are talking (needs
   friendly nameplates, Shift + V by default), and above your own character while you talk.
 - **Minimap button** with a tooltip listing who is in range, and a halo while someone talks.

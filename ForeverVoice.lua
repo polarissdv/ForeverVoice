@@ -26,8 +26,6 @@ ns.defaults = {
     groupInstance = true,   -- Group at full volume in dungeons / battlegrounds
     enterAlert = true,
     speakerIcons = true,    -- Speaker above the head of players talking
-    banner = false,         -- Floating list of who is talking (works in dungeons)
-    bannerX = 0, bannerY = 240,
     ghostMode = false,      -- Ghosts only hear ghosts
     joinSound = true,       -- Sound when someone joins or leaves the channel
     aloneAlert = true,      -- Warning when I talk with nobody in range
@@ -79,7 +77,6 @@ function ns.SettingsChanged()
     if ns.RefreshUI then ns.RefreshUI() end
     if ns.RefreshOptions then ns.RefreshOptions() end
     if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
-    if ns.UpdateBanner then ns.UpdateBanner() end
 end
 
 -- ---------------------------------------------------------
@@ -232,7 +229,6 @@ local function Update()
         if ns.RefreshUI then ns.RefreshUI() end
         if ns.UpdateSpeakerIcons then ns.UpdateSpeakerIcons() end
         if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
-        if ns.UpdateBanner then ns.UpdateBanner() end
         return
     end
 
@@ -281,7 +277,6 @@ local function Update()
     if ns.RefreshUI then ns.RefreshUI() end
     if ns.UpdateSpeakerIcons then ns.UpdateSpeakerIcons() end
     if ns.UpdateSelfIcon then ns.UpdateSelfIcon() end
-    if ns.UpdateBanner then ns.UpdateBanner() end
 end
 
 -- ---------------------------------------------------------
@@ -468,7 +463,7 @@ local MACRO_FIELDS = {
     "groupInstance", "enterAlert", "showMinimap", "minimapAngle", "showFrame", "lockFrame",
     "compact", "showMe", "collapsed", "scale", "alpha", "language", "point", "x", "y",
     "channelMode", "maxVolume", "speakerIcons", "selfIcon", "selfIconX", "selfIconY",
-    "banner", "bannerX", "bannerY", "ghostMode", "joinSound", "aloneAlert",
+    "ghostMode", "joinSound", "aloneAlert",
 }
 
 local function EncodeMacro(db)

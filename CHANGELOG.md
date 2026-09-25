@@ -1,9 +1,6 @@
 # ForeverVoice - Changelog
 
 ## 1.4
-- New "talking banner": a small floating list with the names of the players
-  talking. It works everywhere, including dungeons, where the game forbids
-  addons to touch nameplates. Drag it while the options menu is open.
 - New /fv who: who in your guild has ForeverVoice and in which version,
   who is running an old one, and who still has to install it.
 - New warning when you talk while nobody is in voice range, so you don't
