@@ -8,6 +8,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.4-33ccff)
 ![Interface](https://img.shields.io/badge/WoW%3A%20Forever-1.60.x%20(16001)-c8a14a)
+[![Support](https://img.shields.io/badge/Support-TipeeeStream-ff7b00)](https://www.tipeeestream.com/polarzz88/)
 
 </div>
 
@@ -125,6 +126,12 @@ The list of "always heard" players doesn't fit in the macro, so it is only kept 
 - **World of Warcraft: Forever**: 1.60.x, Interface `16001`
 - Blizzard voice chat must be enabled in the game settings.
 
+## Support
+
+ForeverVoice is free, and it stays free and complete. If it made your guild nights better and
+you feel like saying thanks, you can leave a tip on
+**[TipeeeStream](https://www.tipeeestream.com/polarzz88/)**. Entirely optional.
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md).
@@ -133,6 +140,6 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 <div align="center">
 
-Made by **Polarz141**
+Made by **Polarz141** · [Support me](https://www.tipeeestream.com/polarzz88/)
 
 </div>
